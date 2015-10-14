@@ -152,3 +152,24 @@ def sort_corners(corners):
         elif x < ctr_x and y > ctr_y:
             srtd_corners[3] = (x, y)
     return srtd_corners
+
+
+def process_frame(img):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    (thresh, bw_img) = cv2.threshold(gray_img, 128, 255,
+                                     cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    edges = cv2.Canny(gray_img, threshold1=thresh, threshold2=thresh*1.5,
+                      apertureSize=3)
+    minLineLength = 100
+    maxLineGap = 15
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, 100,
+                            minLineLength, maxLineGap)
+    try:
+        plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
+    except:  # return blank screen if it couldn't be found
+        return np.zeros((720, 1280, 3), dtype=np.uint8)
+    corners = sort_corners(find_corners(img, plt_lines))
+    dest_corners = [(0, 0), (1279, 0), (1279, 719), (0, 719)]
+    trans = cv2.getPerspectiveTransform(np.array(corners).astype('float32'),
+                                        np.array(dest_corners).astype('float32'))
+    return cv2.warpPerspective(img, trans, (1280, 720))
