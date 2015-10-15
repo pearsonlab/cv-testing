@@ -13,7 +13,7 @@ def main():
             fullscr=True)
     x = -0.5
     y = -0.5
-    dotStim = visual.Circle(testWin, radius=0.05, fillColor=[0, 1, 0],
+    dotStim = visual.Circle(testWin, size=(0.1, 0.1*(8.0/5)), fillColor=[0, 1, 0],
                             units='norm', pos=(x, y), autoDraw=True)
     testWin.flip()
     core.wait(4)
