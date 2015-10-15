@@ -8,7 +8,8 @@ import numpy as np
 
 def group_lines(lines):
     '''
-    Groups lines returned by HoughLinesP into top, bottom, left, and right edges.
+    Groups lines returned by HoughLinesP into top, bottom, left,
+    and right edges.
     '''
     horz = []
     vert = []
@@ -18,7 +19,7 @@ def group_lines(lines):
         if np.abs(x1-x2) < np.abs(y1-y2):
             vert.append((x1, y1, x2, y2))
         else:
-            horz.append((x1, y1, x2, y2)) 
+            horz.append((x1, y1, x2, y2))
 
     # find (very) approximate center of edges
     horz = np.array(horz)
@@ -66,9 +67,11 @@ def fit_edges(groups):
     h_fits = []
     v_fits = []
     for group in horz:
-        h_fits.append(np.polyfit(group[:, 0], group[:, 1], 1))  # fit line as function of x values
+        # fit line as function of x values
+        h_fits.append(np.polyfit(group[:, 0], group[:, 1], 1))
     for group in vert:
-        v_fits.append(np.polyfit(group[:, 1], group[:, 0], 1))  # fit line as function of y values
+        # fit line as function of y values
+        v_fits.append(np.polyfit(group[:, 1], group[:, 0], 1))
 
     return h_fits, v_fits
 
@@ -162,17 +165,25 @@ def process_frame(img):
                       apertureSize=3)
     minLineLength = 100
     maxLineGap = 15
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, 100,
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
                             minLineLength, maxLineGap)
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
-    except:  # return blank screen if it couldn't be found
-        return np.zeros((720, 1280, 3), dtype=np.uint8)
+    except:  # line detection on grayscale doesn't work
+        try:  # try black and white image (good for blurry frames)
+            edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
+                              apertureSize=3)
+            lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
+                                    minLineLength, maxLineGap)
+            plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
+        except:
+            return None
     corners = sort_corners(find_corners(img, plt_lines))
-    if len(corners) != 4:  # indicates that edges found were inaccurate
-        return np.zeros((720, 1280, 3), dtype=np.uint8)
+    if len(corners) != 4:
+        return None
 
     dest_corners = [(0, 0), (1279, 0), (1279, 719), (0, 719)]
     trans = cv2.getPerspectiveTransform(np.array(corners).astype('float32'),
-                                        np.array(dest_corners).astype('float32'))
+                                        np.array(dest_corners)
+                                        .astype('float32'))
     return cv2.warpPerspective(img, trans, (1280, 720))
