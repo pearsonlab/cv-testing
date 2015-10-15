@@ -169,6 +169,9 @@ def process_frame(img):
     except:  # return blank screen if it couldn't be found
         return np.zeros((720, 1280, 3), dtype=np.uint8)
     corners = sort_corners(find_corners(img, plt_lines))
+    if len(corners) > 4:  # indicates that edges found were inaccurate
+        return np.zeros((720, 1280, 3), dtype=np.uint8)
+
     dest_corners = [(0, 0), (1279, 0), (1279, 719), (0, 719)]
     trans = cv2.getPerspectiveTransform(np.array(corners).astype('float32'),
                                         np.array(dest_corners).astype('float32'))
