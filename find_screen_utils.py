@@ -161,7 +161,7 @@ def process_frame(img):
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     (thresh, bw_img) = cv2.threshold(gray_img, 128, 255,
                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    edges = cv2.Canny(gray_img, threshold1=thresh, threshold2=thresh*1.5,
+    edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
                       apertureSize=3)
     minLineLength = 100
     maxLineGap = 15
@@ -169,18 +169,13 @@ def process_frame(img):
                             minLineLength, maxLineGap)
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
-    except:  # line detection on grayscale doesn't work
-        try:  # try black and white image (good for blurry frames)
-            edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
-                              apertureSize=3)
-            lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
-                                    minLineLength, maxLineGap)
-            plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
-        except:
-            return None
-    corners = sort_corners(find_corners(img, plt_lines))
+    except:
+        return None
+
+    corners = find_corners(img, plt_lines)
     if len(corners) != 4:
         return None
+    corners = sort_corners(corners)
 
     dest_corners = [(0, 0), (1279, 0), (1279, 719), (0, 719)]
     trans = cv2.getPerspectiveTransform(np.array(corners).astype('float32'),
