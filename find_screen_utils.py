@@ -53,6 +53,28 @@ def group_lines(lines):
     left = np.array(left)
     right = np.array(right)
 
+    def filter_outliers(group, axis):
+        '''
+        Remove outliers from the group along an axis.
+        If axis=0, looking at x value (for vertical lines)
+        If axis=1, looking at y value (for horz lines)
+        '''
+        filtered = []
+        vals = group[:, axis]
+        med = np.median(vals)
+        resid = np.abs(vals - med)
+        MAD = np.median(resid) * 1.4826
+        for p in list(group):
+            if abs(p[axis]-med) < 3.0*MAD:
+                filtered.append(p)
+        return np.array(filtered)
+
+    top = filter_outliers(top, 1)
+    bottom = filter_outliers(bottom, 1)
+
+    left = filter_outliers(left, 0)
+    right = filter_outliers(right, 0)
+
     # return points that consist each edge of the screen
     return ((top, bottom), (left, right))
 
@@ -161,16 +183,27 @@ def process_frame(img):
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     (thresh, bw_img) = cv2.threshold(gray_img, 128, 255,
                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
-                      apertureSize=3)
+    cont_img = np.zeros(bw_img.shape, dtype='uint8')
+    contours, hierarchy = cv2.findContours(bw_img, cv2.RETR_EXTERNAL,
+                                           cv2.CHAIN_APPROX_NONE)
+    cv2.drawContours(cont_img, contours, len(contours) - 1, 255, 5, 8,
+                     hierarchy, 0)
     minLineLength = 100
     maxLineGap = 15
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
+    lines = cv2.HoughLinesP(cont_img, 1, np.pi/180, 80, None,
                             minLineLength, maxLineGap)
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
     except:
-        return None
+        try:
+            edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
+                              apertureSize=3)
+            lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
+                                    minLineLength, maxLineGap)
+            plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
+
+        except:
+            return None
 
     corners = find_corners(img, plt_lines)
     if len(corners) != 4:
