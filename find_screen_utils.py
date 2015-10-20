@@ -24,8 +24,8 @@ def group_lines(lines):
     # find (very) approximate center of edges
     horz = np.array(horz)
     vert = np.array(vert)
-    x_center = horz.mean(axis=0)[0]
-    y_center = vert.mean(axis=0)[1]
+    x_center = (horz.mean(axis=0)[0] + horz.mean(axis=0)[2]) / 2
+    y_center = (vert.mean(axis=0)[1] + vert.mean(axis=0)[3]) / 2
 
     # split horizontal lines into top and bottom
     top = []
@@ -186,8 +186,10 @@ def process_frame(img):
     cont_img = np.zeros(bw_img.shape, dtype='uint8')
     contours, hierarchy = cv2.findContours(bw_img, cv2.RETR_EXTERNAL,
                                            cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(cont_img, contours, len(contours) - 1, 255, 5, 8,
-                     hierarchy, 0)
+    longest = np.argmax([cv2.arcLength(x, True) for x in contours])
+    hull = cv2.convexHull(contours[longest])
+    hull = [hull]
+    cv2.drawContours(cont_img, hull, 0, 255, 5, 8)
     minLineLength = 100
     maxLineGap = 15
     lines = cv2.HoughLinesP(cont_img, 1, np.pi/180, 80, None,
@@ -195,15 +197,7 @@ def process_frame(img):
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
     except:
-        try:
-            edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
-                              apertureSize=3)
-            lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
-                                    minLineLength, maxLineGap)
-            plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
-
-        except:
-            return None
+        return None
 
     corners = find_corners(img, plt_lines)
     if len(corners) != 4:
