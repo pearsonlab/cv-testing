@@ -209,3 +209,31 @@ def process_frame(img):
                                         np.array(dest_corners)
                                         .astype('float32'))
     return cv2.warpPerspective(img, trans, (1280, 720))
+
+
+def process_frame_circles(img):
+    green_img = (img[:, :, 1])
+    green_img = cv2.GaussianBlur(green_img, (9, 9), 2, None, 2)
+    _, bw_img = cv2.threshold(green_img, 120, 255, cv2.THRESH_BINARY)
+    circles = cv2.HoughCircles(bw_img, cv2.cv.CV_HOUGH_GRADIENT, 1, 200,
+                               param1=200, param2=5, minRadius=10,
+                               maxRadius=100)
+
+    def find_corner_circles(points):
+        corners = {(0, 0): None,
+                   (1919, 0): None,
+                   (1919, 1079): None,
+                   (0, 1079): None}
+        for corner in corners:
+            # find point closest to each corner
+            corners[corner] = points[np.argmin(np.linalg.norm(points-corner,
+                                                              axis=1))]
+        return corners
+    points = circles[0, :, 0:2]
+    matches = find_corner_circles(points)
+    dest = np.array(matches.keys()).astype('float32')
+    dest[:, 0] = dest[:, 0]*(1279./1919)
+    dest[:, 1] = dest[:, 1]*(719./1079)
+    src = np.array(matches.values())
+    trans = cv2.getPerspectiveTransform(src, dest)
+    return cv2.warpPerspective(img, trans, (1280, 720))
