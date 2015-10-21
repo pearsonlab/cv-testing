@@ -25,16 +25,16 @@ def drawBorder(win, borderType):
     elif borderType == 'dot':
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(-1, -1), autoDraw=True)
+                      units='norm', pos=(-0.95, -0.92), autoDraw=True)
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(1, -1), autoDraw=True)
+                      units='norm', pos=(0.95, -0.92), autoDraw=True)
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(1, 1), autoDraw=True)
+                      units='norm', pos=(0.95, 0.92), autoDraw=True)
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(-1, 1), autoDraw=True)
+                      units='norm', pos=(-0.95, 0.92), autoDraw=True)
 
 
 def images(borderType):
@@ -86,7 +86,7 @@ def circles():
 
 
 def main():
-    images('dot')
+    images('line')
 
 if __name__ == '__main__':
     main()
