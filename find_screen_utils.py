@@ -212,12 +212,19 @@ def process_frame(img):
 
 
 def process_frame_circles(img):
-    green_img = (img[:, :, 1])
+    # green_img = (img[:, :, 1])
+    green_img = ((img[:, :, 1] > 200) & (img[:, :, 0] < 200) &
+                 (img[:, :, 2] < 200)).astype('uint8')
+    green_img[green_img == 1] = 255
     green_img = cv2.GaussianBlur(green_img, (9, 9), 2, None, 2)
     _, bw_img = cv2.threshold(green_img, 120, 255, cv2.THRESH_BINARY)
     circles = cv2.HoughCircles(bw_img, cv2.cv.CV_HOUGH_GRADIENT, 1, 200,
                                param1=200, param2=5, minRadius=10,
                                maxRadius=100)
+    if circles is None:
+        return None
+    elif len(circles[0]) < 4:
+        return None
 
     def find_corner_circles(points):
         corners = {(0, 0): None,

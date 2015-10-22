@@ -10,37 +10,42 @@ import glob
 
 def drawBorder(win, borderType):
     if borderType == 'line':
-        visual.Line(win, start=(-1, -1), end=(1, -1), autoDraw=True,
+        loc = 0.98
+        visual.Line(win, start=(-loc, -loc), end=(loc, -loc), autoDraw=True,
                     lineColor=[0, 255, 0], lineColorSpace='rgb255',
-                    units='norm', lineWidth=10)
-        visual.Line(win, start=(1, -1), end=(1, 1), autoDraw=True,
+                    units='norm', lineWidth=60)
+        visual.Line(win, start=(loc, -loc), end=(loc, loc), autoDraw=True,
                     lineColor=[0, 255, 0], lineColorSpace='rgb255',
-                    units='norm', lineWidth=10)
-        visual.Line(win, start=(1, 1), end=(-1, 1), autoDraw=True,
+                    units='norm', lineWidth=60)
+        visual.Line(win, start=(loc, loc), end=(-loc, loc), autoDraw=True,
                     lineColor=[0, 255, 0], lineColorSpace='rgb255',
-                    units='norm', lineWidth=10)
-        visual.Line(win, start=(-1, 1), end=(-1, -1), autoDraw=True,
+                    units='norm', lineWidth=60)
+        visual.Line(win, start=(-loc, loc), end=(-loc, -loc), autoDraw=True,
                     lineColor=[0, 255, 0], lineColorSpace='rgb255',
-                    units='norm', lineWidth=10)
+                    units='norm', lineWidth=60)
     elif borderType == 'dot':
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(-0.95, -0.92), autoDraw=True)
+                      units='norm', pos=(-0.95, -0.92), autoDraw=True,
+                      lineColor=([-1, -1, -1]))
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(0.95, -0.92), autoDraw=True)
+                      units='norm', pos=(0.95, -0.92), autoDraw=True,
+                      lineColor=([-1, -1, -1]))
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(0.95, 0.92), autoDraw=True)
+                      units='norm', pos=(0.95, 0.92), autoDraw=True,
+                      lineColor=([-1, -1, -1]))
         visual.Circle(win, size=(0.1, 0.1*(8.0/5)),
                       fillColor=[0, 255, 0], fillColorSpace='rgb255',
-                      units='norm', pos=(-0.95, 0.92), autoDraw=True)
+                      units='norm', pos=(-0.95, 0.92), autoDraw=True,
+                      lineColor=([-1, -1, -1]))
 
 
 def images(borderType):
     testWin = visual.Window(
             size=(2560, 1600), monitor="tobiiMonitor", units="pix", screen=0,
-            fullscr=True)
+            fullscr=True, color=(-1, -1, -1))
 
     drawBorder(testWin, borderType)
 
@@ -86,7 +91,7 @@ def circles():
 
 
 def main():
-    images('line')
+    images('dot')
 
 if __name__ == '__main__':
     main()
