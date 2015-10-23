@@ -4,6 +4,59 @@ Used for eye tracking studies.
 '''
 import cv2
 import numpy as np
+import warnings
+
+
+def group_points(points):
+    '''
+    Groups set of points into edges of screen.
+    '''
+    horz = []
+    vert = []
+    prev = points[0]
+    for pt in list(points):
+        if np.array_equal(pt, prev):
+            continue
+        diff = np.abs(pt - prev)
+        if diff[1] == 0:
+            horz.append(pt)
+        elif (diff[0]/diff[1]) > 5:
+            horz.append(pt)
+        elif diff[0] == 0:
+            vert.append(pt)
+        elif (diff[1]/diff[0]) > 5:
+            vert.append(pt)
+        prev = pt
+
+    # find (very) approximate center of edges
+    horz = np.array(horz)
+    vert = np.array(vert)
+    x_center = horz.mean(axis=0)[0]
+    y_center = vert.mean(axis=0)[1]
+
+    # split horizontal lines into top and bottom
+    top = []
+    bottom = []
+    for x, y in list(horz):
+        if y < y_center:
+            top.append((x, y))
+        else:
+            bottom.append((x, y))
+    top = np.array(top)
+    bottom = np.array(bottom)
+
+    # split vertical lines into left and right
+    left = []
+    right = []
+    for x, y in vert:
+        if x > x_center:
+            right.append((x, y))
+        else:
+            left.append((x, y))
+    left = np.array(left)
+    right = np.array(right)
+
+    return ((top, bottom), (left, right))
 
 
 def group_lines(lines):
@@ -183,17 +236,58 @@ def process_frame(img):
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     (thresh, bw_img) = cv2.threshold(gray_img, 128, 255,
                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    cont_img = np.zeros(bw_img.shape, dtype='uint8')
-    contours, hierarchy = cv2.findContours(bw_img, cv2.RETR_EXTERNAL,
-                                           cv2.CHAIN_APPROX_NONE)
-    longest = np.argmax([cv2.arcLength(x, True) for x in contours])
-    hull = cv2.convexHull(contours[longest])
-    hull = [hull]
-    cv2.drawContours(cont_img, hull, 0, 255, 5, 8)
+    edges = cv2.Canny(bw_img, threshold1=thresh, threshold2=thresh*1.5,
+                      apertureSize=3)
     minLineLength = 100
     maxLineGap = 15
-    lines = cv2.HoughLinesP(cont_img, 1, np.pi/180, 80, None,
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 80, None,
                             minLineLength, maxLineGap)
+    try:
+        plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
+    except:
+        return None
+
+    corners = find_corners(img, plt_lines)
+    if len(corners) != 4:
+        return None
+    corners = sort_corners(corners)
+
+    dest_corners = [(0, 0), (1279, 0), (1279, 719), (0, 719)]
+    trans = cv2.getPerspectiveTransform(np.array(corners).astype('float32'),
+                                        np.array(dest_corners)
+                                        .astype('float32'))
+    return cv2.warpPerspective(img, trans, (1280, 720))
+
+
+def find_corner_points(points):
+        corners = {(0, 0): None,
+                   (1919, 0): None,
+                   (1919, 1079): None,
+                   (0, 1079): None}
+        for corner in corners:
+            # find point closest to each corner
+            corners[corner] = points[np.argmin(np.linalg.norm(points-corner,
+                                                              axis=1))]
+        return corners
+
+
+def process_frame_lines(img):
+    summed = img.sum(axis=2)
+    summed = np.dstack((summed, summed, summed))
+    warnings.filterwarnings("ignore")
+    norm = np.divide(img.astype('float32'), summed)
+    warnings.filterwarnings("default")
+    green_img = ((norm[:, :, 1] > 0.6)).astype('uint8')
+    green_img[green_img == 1] = 255
+    green_img = cv2.GaussianBlur(green_img, (9, 9), 2, None, 2)
+    minLineLength = 100
+    maxLineGap = 15
+    lines = cv2.HoughLinesP(green_img, 1, np.pi/180, 80, None,
+                            minLineLength, maxLineGap)
+    # if lines is None:
+    #     return None
+    # hull = cv2.convexHull(np.vstack((lines[0, :, :2], lines[0, :, 2:4])))
+    # hull = hull[:, 0, :]
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
     except:
@@ -226,18 +320,8 @@ def process_frame_circles(img):
     elif len(circles[0]) < 4:
         return None
 
-    def find_corner_circles(points):
-        corners = {(0, 0): None,
-                   (1919, 0): None,
-                   (1919, 1079): None,
-                   (0, 1079): None}
-        for corner in corners:
-            # find point closest to each corner
-            corners[corner] = points[np.argmin(np.linalg.norm(points-corner,
-                                                              axis=1))]
-        return corners
     points = circles[0, :, 0:2]
-    matches = find_corner_circles(points)
+    matches = find_corner_points(points)
     dest = np.array(matches.keys()).astype('float32')
     dest[:, 0] = dest[:, 0]*(1279./1919)
     dest[:, 1] = dest[:, 1]*(719./1079)
