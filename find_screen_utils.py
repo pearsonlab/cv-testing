@@ -271,23 +271,26 @@ def find_corner_points(points):
         return corners
 
 
-def process_frame_lines(img):
+def process_frame_lines(img, lighting):
+    opt = {}
+    if lighting == 'dark':
+        opt['green_prev'] = 0.6
+    elif lighting == 'light':
+        opt['green_prev'] = 0.45
     summed = img.sum(axis=2)
     summed = np.dstack((summed, summed, summed))
     warnings.filterwarnings("ignore")
     norm = np.divide(img.astype('float32'), summed)
     warnings.filterwarnings("default")
-    green_img = ((norm[:, :, 1] > 0.6)).astype('uint8')
+    green_img = ((norm[:, :, 1] > opt['green_prev'])).astype('uint8')
     green_img[green_img == 1] = 255
     green_img = cv2.GaussianBlur(green_img, (9, 9), 2, None, 2)
     minLineLength = 100
     maxLineGap = 15
     lines = cv2.HoughLinesP(green_img, 1, np.pi/180, 80, None,
                             minLineLength, maxLineGap)
-    # if lines is None:
-    #     return None
-    # hull = cv2.convexHull(np.vstack((lines[0, :, :2], lines[0, :, 2:4])))
-    # hull = hull[:, 0, :]
+    if lines is None:
+        return None
     try:
         plt_lines = get_lines(img, fit_edges(group_lines(lines[0])))
     except:
