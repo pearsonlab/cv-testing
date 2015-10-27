@@ -5,6 +5,7 @@ Used for eye tracking studies.
 import cv2
 import numpy as np
 import warnings
+from sklearn import linear_model
 
 
 def group_points(points):
@@ -131,6 +132,93 @@ def group_lines(lines):
     # return points that consist each edge of the screen
     return ((top, bottom), (left, right))
 
+
+def longest_lines(lines):
+    '''
+    Return longest HoughLine segments on each edge
+    '''
+    horz = []
+    vert = []
+    # split into horizontal and vertical lines
+    for x1, y1, x2, y2 in lines:
+        # if change in x is less than in y, then classify as vertical
+        if np.abs(x1-x2) < np.abs(y1-y2):
+            vert.append((x1, y1, x2, y2))
+        else:
+            horz.append((x1, y1, x2, y2))
+
+    # find (very) approximate center of edges
+    horz = np.array(horz)
+    vert = np.array(vert)
+    x_center = (horz.mean(axis=0)[0] + horz.mean(axis=0)[2]) / 2
+    y_center = (vert.mean(axis=0)[1] + vert.mean(axis=0)[3]) / 2
+
+    # split horizontal lines into top and bottom
+    top = []
+    bottom = []
+    for x1, y1, x2, y2 in horz:
+        if y1 < y_center:
+            top.append((x1, y1, x2, y2))
+        else:
+            bottom.append((x1, y1, x2, y2))
+
+    # split vertical lines into left and right
+    left = []
+    right = []
+    for x1, y1, x2, y2 in vert:
+        if x1 > x_center:
+            right.append((x1, y1, x2, y2))
+        else:
+            left.append((x1, y1, x2, y2))
+
+    # find longest line in each group
+    groups = [np.array(top), np.array(bottom), np.array(left), np.array(right)]
+    longest_group = []
+    for group in groups:
+        longest = group[np.argmax(np.linalg.norm(group[0:2]-group[2:4],
+                                                 axis=1))]
+        longest_group.append(longest)
+
+    longest_group = np.array(longest_group)
+    # return longest lines on each edge of the screen
+    return ((np.vstack((longest_group[0, 0:2], longest_group[0, 2:4])),
+             np.vstack((longest_group[1, 0:2], longest_group[1, 2:4]))),
+            (np.vstack((longest_group[2, 0:2], longest_group[2, 2:4])),
+             np.vstack((longest_group[3, 0:2], longest_group[3, 2:4]))))
+
+
+def fit_robust_and_get_lines(img, groups):
+    '''
+    Fits line to each group using RANSAC algorithm, then returns
+    line segments that span the image.
+    '''
+    horz = groups[0]
+    vert = groups[1]
+
+    model_ransac = linear_model.RANSACRegressor(linear_model
+                                                .LinearRegression(),
+                                                max_trials=500)
+    lines = []
+    for group in horz:
+        X = group[:, 0].reshape(len(group[:, 0]), 1)
+        Y = group[:, 1].reshape(len(group[:, 1]), 1)
+        model_ransac.fit(X, Y)
+        x1 = 0
+        x2 = len(img[0, :]) - 1
+        y1 = int(model_ransac.predict(x1)[0, 0])
+        y2 = int(model_ransac.predict(x2)[0, 0])
+        lines.append((x1, y1, x2, y2))
+    for group in vert:
+        X = group[:, 1].reshape(len(group[:, 1]), 1)
+        Y = group[:, 0].reshape(len(group[:, 0]), 1)
+        model_ransac.fit(X, Y)
+        y1 = 0
+        y2 = len(img[:, 0]) - 1
+        x1 = int(model_ransac.predict(y1)[0, 0])
+        x2 = int(model_ransac.predict(y2)[0, 0])
+        lines.append((x1, y1, x2, y2))
+
+    return lines
 
 def fit_edges(groups):
     '''

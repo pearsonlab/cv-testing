@@ -61,6 +61,21 @@ def images(borderType):
     testWin.close()
 
 
+def video():
+    testWin = visual.Window(
+            size=(1280, 800), monitor="tobiiMonitor", units="pix", screen=0,
+            fullscr=True, color=(-1, -1, -1), waitBlanking=False)
+    drawBorder(testWin, 'line')
+    mov = visual.MovieStim(testWin,
+                           filename='images/display/Cats_Being_Jerks.mp4',
+                           units='norm', size=(1.0, 1.0))
+    mov.draw()
+    while mov.status == 1:
+        mov.draw()
+        testWin.flip()
+    testWin.close()
+
+
 def circles():
     testWin = visual.Window(
             size=(1280, 800), monitor="tobiiMonitor", units="pix", screen=0,
@@ -91,7 +106,7 @@ def circles():
 
 
 def main():
-    images('dot')
+    video()
 
 if __name__ == '__main__':
     main()
