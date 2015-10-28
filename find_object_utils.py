@@ -58,11 +58,11 @@ def drawMatches(img1, kp1, img2, kp2, matches, mask):
         (x2,y2) = kp2[img2_idx].pt
 
         # Draw a small circle at both co-ordinates
-        # radius 4
-        # colour green
+        # radius 10
+        # colour red
         # thickness = 1
-        cv2.circle(out, (int(x1),int(y1)), 4, (0, 255, 0), 1)
-        cv2.circle(out, (int(x2)+cols1,int(y2)), 4, (0, 255, 0), 1)
+        cv2.circle(out, (int(x1),int(y1)), 10, (255, 0, 0), 1)
+        cv2.circle(out, (int(x2)+cols1,int(y2)), 10, (255, 0, 0), 1)
 
         # Draw a line in between the two points
         # thickness = 1
