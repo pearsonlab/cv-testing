@@ -4,7 +4,7 @@ displays this test, then we will attempt to extract the screen from
 the video.
 '''
 
-from psychopy import visual, core
+from psychopy import visual, core, event
 import glob
 
 
@@ -69,10 +69,13 @@ def video():
     mov = visual.MovieStim(testWin,
                            filename='images/display/Cats_Being_Jerks.mp4',
                            units='norm', size=(1.0, 1.0))
-    mov.draw()
-    while mov.status == 1:
+
+    while mov.status != visual.FINISHED:
         mov.draw()
         testWin.flip()
+        if event.getKeys(keyList=['escape','q']):
+            testWin.close()
+            core.quit()
     testWin.close()
 
 
