@@ -76,17 +76,17 @@ def drawMatches(img1, kp1, img2, kp2, matches, mask):
     return out
 
 
-def object_find(img1, img2, MIN_MATCH_COUNT):
+def object_find(match_sift, frame, MIN_MATCH_COUNT):
     '''
-    Finds an object (from still image, img1) within a frame (img2).  If
+    Finds an object (from precomputed sift features) within a frame.  If
     found it returns the transformation matrix from frame to still.
 
     This code is based on the OpenCV feature detection tutorial
     '''
 
     sift = cv2.SIFT()
-    kp1, des1 = sift.detectAndCompute(img1, None)
-    kp2, des2 = sift.detectAndCompute(img2, None)
+    kp1, des1 = match_sift
+    kp2, des2 = sift.detectAndCompute(frame, None)
 
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
